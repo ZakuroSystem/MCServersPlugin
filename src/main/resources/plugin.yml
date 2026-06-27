@@ -1,0 +1,17 @@
+name: MCServersConnector
+version: ${version}
+main: jp.mcservers.connector.MCServersConnectorPlugin
+author: MCServers.jp
+website: https://mcservers.jp
+description: MCServers.jp server heartbeat and vote reward connector.
+
+commands:
+  mcservers:
+    description: MCServers.jp connector command.
+    usage: /mcservers <reload|status>
+    permission: mcservers.admin
+    aliases: [mcserversconnector, mcs]
+permissions:
+  mcservers.admin:
+    description: Allows MCServers connector administration commands.
+    default: op

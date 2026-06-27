@@ -1,0 +1,24 @@
+# MCServers.jp Connector
+# 管理画面で発行した Server ID と Secret を設定してください。
+base-url: "https://mcservers.jp"
+server-id: 0
+server-secret: "CHANGE_ME"
+# 掲載申請後に表示される所有権確認トークンです。承認前はこちらを設定してください。
+ownership-token: ""
+# 初回起動時に自動生成されます。同じsecretを複数サーバーで使い回した場合の検知にも使います。
+instance-id: ""
+
+# HTTPS 443を使います。base-url は https://mcservers.jp のままにしてください。
+heartbeat-interval-seconds: 60
+vote-poll-interval-seconds: 30
+ownership-verify-interval-seconds: 60
+claim-batch-size: 20
+
+# 投票者ごとに実行するコマンドです。%PLAYER% が投票者名に置換されます。
+# 先頭の / は不要です。
+vote-commands:
+  - "give %PLAYER% diamond 1"
+  - "tell %PLAYER% MCServers.jpへの投票ありがとうございます！"
+
+connect-timeout-seconds: 10
+request-timeout-seconds: 15
