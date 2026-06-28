@@ -16,17 +16,19 @@ MCServers.jp の掲載サーバー向け Java plugin です。
 - プレイヤー数 / 最大人数 / バージョン送信
 - 投票報酬の取得
 - サーバー側コマンド実行後の ack
+- 導入済みサーバーからの暗号化ブラウザ認証
 
 ## ビルド
 
 ```powershell
+cd plugin\mcservers-connector
 gradle build
 ```
 
 生成物:
 
 ```text
-build/libs/mcservers-connector-1.0.1.jar
+build/libs/mcservers-connector-1.1.0.jar
 ```
 
 ## 設定
@@ -62,6 +64,7 @@ ownership-token: "掲載申請後に表示されたトークン"
 ```text
 /mcservers status
 /mcservers reload
+/mcservers auth <ブラウザに表示された8桁番号>
 ```
 
 権限:
@@ -77,6 +80,7 @@ POST /api/plugin/v1/ownership/verify
 POST /api/plugin/v1/heartbeat
 POST /api/plugin/v1/rewards/fetch
 POST /api/plugin/v1/rewards/ack
+POST /api/plugin/v1/auth/issue
 ```
 
 保護方式:
@@ -109,4 +113,4 @@ POST /api/plugin/v1/rewards/ack
 
 ## ライセンス
 
-このpluginは [GNU General Public License v3.0](LICENSE) で公開しています。
+この plugin の扱いは [LICENSE.txt](C:\dev\mcservers_simple_release_perf_security\mc_auth_work\plugin\mcservers-connector\LICENSE.txt) を参照してください。

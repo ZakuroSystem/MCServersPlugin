@@ -8,10 +8,12 @@ description: MCServers.jp server heartbeat and vote reward connector.
 commands:
   mcservers:
     description: MCServers.jp connector command.
-    usage: /mcservers <reload|status>
-    permission: mcservers.admin
+    usage: /mcservers <auth|reload|status>
     aliases: [mcserversconnector, mcs]
 permissions:
+  mcservers.auth:
+    description: Allows players to authenticate their browser through this server.
+    default: true
   mcservers.admin:
     description: Allows MCServers connector administration commands.
     default: op

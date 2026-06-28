@@ -3,6 +3,7 @@ package jp.mcservers.connector;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -32,6 +33,9 @@ public final class MCServersConnectorPlugin extends JavaPlugin {
     private static final Pattern OWNERSHIP_SERVER_ID_PATTERN = Pattern.compile("\"server_id\"\\s*:\\s*(\\d+)");
     private static final Pattern OWNERSHIP_SECRET_PATTERN = Pattern.compile("\"server_secret\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern REWARD_PATTERN = Pattern.compile("\\{[^{}]*\"id\"\\s*:\\s*(\\d+)[^{}]*\"player\"\\s*:\\s*\"([^\"]+)\"[^{}]*\\}");
+    private static final Pattern AUTH_STATUS_PATTERN = Pattern.compile("\"status\"\\s*:\\s*\"issued\"");
+    private static final Pattern AUTH_PLAYER_PATTERN = Pattern.compile("\"player_name\"\\s*:\\s*\"([^\"]+)\"");
+    private static final Pattern AUTH_CODE_PATTERN = Pattern.compile("^[0-9]{8}$");
     private static final Pattern PLAYER_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9_]{1,16}$");
     private static final char[] HEX_ALPHABET = "0123456789abcdef".toCharArray();
 
@@ -87,7 +91,41 @@ public final class MCServersConnectorPlugin extends JavaPlugin {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!command.getName().equalsIgnoreCase("mcservers")) return false;
 
-        if (args.length == 0 || args[0].equalsIgnoreCase("status")) {
+        if (args.length > 0 && args[0].equalsIgnoreCase("auth")) {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage("[MCServers] この認証コマンドはゲーム内のプレイヤーだけが実行できます。");
+                return true;
+            }
+            if (!sender.hasPermission("mcservers.auth")) {
+                sender.sendMessage("[MCServers] 認証コマンドを実行する権限がありません。");
+                return true;
+            }
+            if (!hasServerCredentials()) {
+                sender.sendMessage("[MCServers] このサーバーのMCServers連携は設定されていません。");
+                return true;
+            }
+            if (args.length != 2 || !AUTH_CODE_PATTERN.matcher(args[1]).matches()) {
+                sender.sendMessage("[MCServers] 使い方: /" + label + " auth <ブラウザに表示された8桁番号>");
+                return true;
+            }
+            final Player player = (Player) sender;
+            final UUID playerUuid = player.getUniqueId();
+            final String playerName = player.getName();
+            final String pairingCode = args[1];
+            sender.sendMessage("[MCServers] ブラウザ認証キーを取得しています...");
+            Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+                public void run() {
+                    requestBrowserAuthSafely(playerUuid, playerName, pairingCode);
+                }
+            });
+            return true;
+        }
+
+        if (args.length > 0 && args[0].equalsIgnoreCase("status")) {
+            if (!sender.hasPermission("mcservers.admin")) {
+                sender.sendMessage("[MCServers] You do not have permission.");
+                return true;
+            }
             sender.sendMessage("[MCServers] server-id=" + serverId
                     + ", credentials=" + (hasServerCredentials() ? "configured" : "not-configured")
                     + ", ownership-token=" + (hasOwnershipToken() ? "configured" : "empty")
@@ -118,9 +156,43 @@ public final class MCServersConnectorPlugin extends JavaPlugin {
             return true;
         }
 
-        sender.sendMessage("[MCServers] Usage: /" + label + " reload");
-        sender.sendMessage("[MCServers] Usage: /" + label + " status");
+        sender.sendMessage("[MCServers] 認証: /" + label + " auth <8桁番号>");
+        if (sender.hasPermission("mcservers.admin")) {
+            sender.sendMessage("[MCServers] 管理: /" + label + " reload");
+            sender.sendMessage("[MCServers] 管理: /" + label + " status");
+        }
         return true;
+    }
+
+    private void requestBrowserAuthSafely(final UUID playerUuid, final String playerName, String pairingCode) {
+        try {
+            String body = "{"
+                    + "\"pairing_code\":\"" + pairingCode + "\","
+                    + "\"player_name\":\"" + jsonEscape(playerName) + "\","
+                    + "\"player_uuid\":\"" + playerUuid.toString() + "\","
+                    + "\"timestamp_ms\":" + System.currentTimeMillis()
+                    + "}";
+            String response = postJson("/api/plugin/v1/auth/issue", body);
+            Matcher playerMatcher = AUTH_PLAYER_PATTERN.matcher(response);
+            boolean issued = AUTH_STATUS_PATTERN.matcher(response).find();
+            String confirmedPlayer = playerMatcher.find() ? unescapeJson(playerMatcher.group(1)) : "";
+            if (!issued || !playerName.equalsIgnoreCase(confirmedPlayer)) {
+                throw new IOException("authentication response did not match the requesting player");
+            }
+            sendPlayerMessage(playerUuid, "[MCServers] 認証キーを取得しました。ブラウザに戻ってパスワードを設定してください。");
+        } catch (Exception ex) {
+            getLogger().log(Level.WARNING, "Failed to issue MCServers browser authentication for " + playerName + ": " + ex.getMessage());
+            sendPlayerMessage(playerUuid, "[MCServers] 認証キーを取得できませんでした。番号の期限を確認して、ブラウザからやり直してください。");
+        }
+    }
+
+    private void sendPlayerMessage(final UUID playerUuid, final String message) {
+        Bukkit.getScheduler().runTask(this, new Runnable() {
+            public void run() {
+                Player player = Bukkit.getPlayer(playerUuid);
+                if (player != null && player.isOnline()) player.sendMessage(message);
+            }
+        });
     }
 
     private void stopTasks() {

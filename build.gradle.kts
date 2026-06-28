@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "jp.mcservers"
-version = "1.0.1"
+version = "1.1.0"
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(8))
