@@ -1,0 +1,1 @@
+dd274644cc445e543ad09b74b74aa13bb8aacc54aa8c5d3ff8fa3d428dd2a977  mcservers-connector-1.1.0.jar

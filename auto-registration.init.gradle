@@ -1,0 +1,43 @@
+allprojects {
+    afterEvaluate { project ->
+        if (project.name == "mcservers-connector") {
+            project.version = "1.2.0"
+
+            def generatedRoot = new File(project.buildDir, "generated-auto-registration")
+            def sourceFile = new File(project.projectDir, "../mcservers-connector-1.2/src/main/java/jp/mcservers/connector/MCServersConnectorPlugin.java")
+            def prepareSource = project.tasks.register("prepareAutoRegistrationSource", Copy) {
+                from(sourceFile)
+                into(new File(generatedRoot, "jp/mcservers/connector"))
+                rename { "MCServersConnectorBootstrapPlugin.java" }
+            }
+
+            project.sourceSets.main.java.srcDir(generatedRoot)
+            project.tasks.named("compileJava").configure {
+                dependsOn(prepareSource)
+            }
+
+            project.tasks.named("processResources").configure {
+                doLast {
+                    def descriptor = new File(destinationDir, "plugin.yml")
+                    def content = descriptor.getText("UTF-8")
+                    content = content.replace(
+                        "main: jp.mcservers.connector.MCServersConnectorPlugin",
+                        "main: jp.mcservers.connector.MCServersConnectorBootstrapPlugin"
+                    )
+                    content = content.replace(
+                        "description: MCServers.jp server heartbeat and vote reward connector.",
+                        "description: MCServers.jp automatic registration, heartbeat and vote reward connector."
+                    )
+                    descriptor.setText(content, "UTF-8")
+
+                    def config = new File(destinationDir, "config.yml")
+                    def configContent = config.getText("UTF-8")
+                    if (!configContent.contains("auto-register:")) {
+                        configContent = configContent + "\n# 初回起動時に接続元IPとMinecraftポートで掲載申請を自動作成します。\nauto-register: true\nregistration-key: \"\"\npublic-port: 0\nserver-name: \"\"\nshort-description: \"\"\ntags: \"Plugin自動登録\"\nregistration-interval-seconds: 60\n"
+                    }
+                    config.setText(configContent, "UTF-8")
+                }
+            }
+        }
+    }
+}

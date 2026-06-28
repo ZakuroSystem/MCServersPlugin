@@ -1,0 +1,53 @@
+# MCServers Connector analytics settings example
+#
+# Copy these keys into src/main/resources/config.yml or your server's plugins/MCServersConnector/config.yml
+# after the /api/plugin/v1/events/batch endpoint is connected on the Web side.
+#
+# Analytics is off by default so existing installations do not start collecting
+# new events without an explicit administrator decision.
+
+analytics-enabled: false
+analytics-flush-interval-seconds: 30
+analytics-batch-size: 100
+analytics-max-buffer-size: 500
+
+# This salt is used only to hash player UUIDs before sending analytics events.
+# Use a long random string per server. Do not reuse server-secret for this value.
+analytics-hash-salt: "CHANGE_ME_TO_A_LONG_RANDOM_VALUE"
+
+# Only these command names are recorded. Arguments are not sent.
+# Keep this list focused on onboarding/navigation commands.
+analytics-allowed-commands:
+  - help
+  - menu
+  - spawn
+  - warp
+  - lands
+  - claim
+  - town
+  - plot
+
+# Areas are converted to coarse buckets before sending events.
+# Exact coordinates are not sent to MCServers.jp.
+#
+# A bucket can be defined as a whole world:
+#   survival:
+#     world: survival
+#
+# Or as one or more regions:
+#   lobby:
+#     - world: world
+#       center: [0, 64, 0]
+#       radius: 80
+#
+analytics-areas:
+  lobby:
+    - world: world
+      center: [0, 64, 0]
+      radius: 80
+  survival:
+    world: survival
+  resource:
+    world: resource
+  pvp:
+    world: pvp
